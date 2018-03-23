@@ -1,0 +1,6 @@
+[submodule "config/golang"]
+	path = config/golang
+	url = https://github.com/Difrex/emacs-go.git
+[submodule "config/python"]
+	path = config/python
+	url = https://github.com/Difrex/emacs-python.git

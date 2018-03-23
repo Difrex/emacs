@@ -1,0 +1,22 @@
+* emacs
+
+My own GNU Emacs configuration.
+
+Not for all, some code not pushed.
+
+* Installation
+
+Clone source
+#+begin_src
+$ git clone https://github.com/Difrex/emacs.git ~/.emacs.d
+#+end_src
+
+Get submodules
+#+begin_src
+$ cd ~/.emacs.d
+$ git submodule update init
+#+end_src
+
+* Customization
+
+Run *M-x customize-group <RET> emacs*

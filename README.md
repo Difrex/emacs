@@ -1,2 +1,0 @@
-# emacs
-GNU Emacs configuration
