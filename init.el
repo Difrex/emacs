@@ -223,11 +223,22 @@ what diminished modes would be on the mode-line if they were still minor."
 ;; Jabber
 ;; Notifications
 (use-package jabber
+    :bind (("C-<up>" . my-jabber-previous-input)
+           ("C-<down>" . my-jabber-next-input))
     :init
     :config
 
     ;; Accounts
     (load-secret-file "jabber-accounts.el")
+
+    (defvar my-jabber-input-history '() "Variable that holds input history")
+    (make-variable-buffer-local 'my-jabber-input-history)
+
+    (defvar my-jabber-input-history-position 0 "Current position in input history")
+    (make-variable-buffer-local 'my-jabber-input-history-position)
+
+    (defvar my-jabber-input-history-current nil "Current input value")
+    (make-variable-buffer-local 'my-jabber-input-history-current)
 
     (defvar libnotify-program "/usr/bin/notify-send")
   
@@ -246,13 +257,53 @@ what diminished modes would be on the mode-line if they were still minor."
             (notify-send (format "%s" (jabber-jid-displayname from))
                          text)))
 
+    (defun my-jabber-previous-input ()
+        (interactive)
+        (let (current-input (pos my-jabber-input-history-position) (len (length my-jabber-input-history)))
+            (if (= pos 0)
+                    (message "%s" "No previous input")
+                (setq current-input (delete-and-extract-region jabber-point-insert (point-max)))
+                (when (= pos len) ; running first time, save current input
+                    (setq my-jabber-input-history-current current-input))
+                (decf my-jabber-input-history-position)
+                (insert (nth my-jabber-input-history-position my-jabber-input-history)))))
+
+    (defun my-jabber-next-input ()
+        (interactive)
+        (let ((pos my-jabber-input-history-position) (len (length my-jabber-input-history)))
+            (cond
+             ((= pos (1- len)) ; pointing at the last element, insert saved input
+              (incf my-jabber-input-history-position)
+              (delete-region jabber-point-insert (point-max))
+              (insert my-jabber-input-history-current)
+              (setq my-jabber-input-history-current nil))
+             ((= pos len)                              ; pointing beyound last element, notify user
+              (message "%s" "No next input"))
+             (t                                ; insert next history item
+              (incf my-jabber-input-history-position)
+              (delete-region jabber-point-insert (point-max))
+              (insert (nth my-jabber-input-history-position my-jabber-input-history))))))
+
+    (defun my-jabber-input-history-choose ()
+        (interactive)
+        (let ((choice (ido-completing-read "Select history item: " (reverse my-jabber-input-history))))
+            (delete-region jabber-point-insert (point-max))
+            (insert choice)))
+    
+    ;; Hooks
     (defun disable-linum-and-enable-visual-line-hook ()
         "Disable lium-mode and anable vial-line-mode for jabber chat."
         (linum-mode 0)
         (visual-line-mode))
 
+    (defun my-jabber-input-history-hook (body id)
+        (add-to-list 'my-jabber-input-history body t)
+        (setq my-jabber-input-history-position (length my-jabber-input-history)))
+
     (add-hook 'jabber-alert-message-hooks 'libnotify-jabber-notify)
     (add-hook 'jabber-chat-mode-hook 'disable-linum-and-enable-visual-line-hook)
+    (add-hook 'jabber-chat-send-hooks 'my-jabber-input-history-hook)
+    
     (jabber-connect-all))
 
 
